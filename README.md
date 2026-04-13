@@ -6,13 +6,8 @@ Next.js 16.1.6 workspace with TypeScript, TailwindCSS, Ant Design, PostgreSQL, A
 
 1. Install Node.js v24.14.0.
 2. Run `npm install`.
-3. Copy `.env.example` to `.env.local` and set `DATABASE_URL` to your Neon connection string.
 4. Run database migrations with `npm run migrate`.
 5. Start the app with `npm run dev`.
-
-Example Neon URL format:
-
-`postgresql://<neon_user>:<neon_password>@<neon_host>/<neon_db>?sslmode=require&channel_binding=require`
 
 ## Database Migrations
 
