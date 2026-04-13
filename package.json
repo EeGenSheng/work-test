@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "migrate": "node db/migrate.mjs",
+    "migrate:new": "node db/new-migration.mjs"
   },
   "dependencies": {
     "@ant-design/icons": "^6.1.0",
