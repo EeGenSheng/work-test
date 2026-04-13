@@ -57,8 +57,12 @@ async function run() {
   const client = await pool.connect();
 
   try {
+    // Some managed Postgres roles (including Neon in CI) can have an empty search_path.
+    // Force public schema for this session so unqualified CREATE/SELECT statements work.
+    await client.query('SET search_path TO public');
+
     await client.query(`
-      CREATE TABLE IF NOT EXISTS schema_migrations (
+      CREATE TABLE IF NOT EXISTS public.schema_migrations (
         id BIGSERIAL PRIMARY KEY,
         name TEXT NOT NULL UNIQUE,
         applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -73,7 +77,7 @@ async function run() {
     }
 
     for (const fileName of migrationFiles) {
-      const existing = await client.query('SELECT name FROM schema_migrations WHERE name = $1 LIMIT 1', [fileName]);
+      const existing = await client.query('SELECT name FROM public.schema_migrations WHERE name = $1 LIMIT 1', [fileName]);
 
       if (existing.rows[0]) {
         console.log(`Skipping ${fileName} (already applied)`);
@@ -87,7 +91,7 @@ async function run() {
       await client.query('BEGIN');
       try {
         await client.query(sql);
-        await client.query('INSERT INTO schema_migrations (name) VALUES ($1)', [fileName]);
+        await client.query('INSERT INTO public.schema_migrations (name) VALUES ($1)', [fileName]);
         await client.query('COMMIT');
         console.log(`Applied ${fileName}`);
       } catch (error) {
