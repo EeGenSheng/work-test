@@ -5,13 +5,52 @@ import { Pool } from 'pg';
 
 const migrationsDir = path.resolve(process.cwd(), 'db/migrations');
 
+async function loadLocalEnv() {
+  if (process.env.DATABASE_URL) {
+    return;
+  }
+
+  const envFiles = ['.env.local', '.env'];
+
+  for (const envFile of envFiles) {
+    const filePath = path.resolve(process.cwd(), envFile);
+
+    try {
+      const contents = await readFile(filePath, 'utf8');
+      for (const line of contents.split(/\r?\n/)) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) {
+          continue;
+        }
+
+        const equalsIndex = trimmed.indexOf('=');
+        if (equalsIndex < 0) {
+          continue;
+        }
+
+        const key = trimmed.slice(0, equalsIndex).trim();
+        const value = trimmed.slice(equalsIndex + 1).trim();
+
+        if (key === 'DATABASE_URL' && value) {
+          process.env.DATABASE_URL = value;
+          return;
+        }
+      }
+    } catch {
+      // Ignore missing env files and continue to the next one.
+    }
+  }
+}
+
 function isSqlFile(fileName) {
   return fileName.toLowerCase().endsWith('.sql');
 }
 
 async function run() {
+  await loadLocalEnv();
+
   if (!process.env.DATABASE_URL) {
-    throw new Error('DATABASE_URL is not configured.');
+    throw new Error('DATABASE_URL is not configured. Set it in the environment or in .env/.env.local.');
   }
 
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -65,7 +104,7 @@ async function run() {
 }
 
 run().catch((error) => {
-  const message = error instanceof Error ? error.message : String(error);
+  const message = error instanceof Error ? `${error.message}${error.stack ? `\n${error.stack}` : ''}` : String(error);
   console.error(`Migration failed: ${message}`);
   process.exitCode = 1;
 });
